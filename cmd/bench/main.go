@@ -64,8 +64,15 @@ func benchProxySequential(n int) (int, float64, float64) {
 		lat = append(lat, float64(time.Since(t0).Microseconds())/1000.0)
 	}
 	dur := time.Since(start)
+	if len(lat) == 0 {
+		return 0, 0, dur.Seconds()
+	}
 	sort.Float64s(lat)
-	p99 := lat[int(float64(len(lat))*0.99)-1]
+	idx := int(float64(len(lat))*0.99) - 1
+	if idx < 0 {
+		idx = 0
+	}
+	p99 := lat[idx]
 	return int(float64(ok) / dur.Seconds()), p99, dur.Seconds()
 }
 

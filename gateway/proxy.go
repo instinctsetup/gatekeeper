@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -37,7 +38,13 @@ func New(cfg Config) *Gateway {
 			if k := r.Header.Get("X-Api-Key"); k != "" {
 				return k
 			}
-			return r.RemoteAddr
+			// strip the ephemeral port: a new TCP connection must not
+			// mint a fresh rate-limit bucket for the same client
+			host, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				return r.RemoteAddr
+			}
+			return host
 		}
 	}
 	if cfg.Ring == nil {
@@ -96,6 +103,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// middleware 2: rate limit
 	key := g.cfg.KeyFunc(r)
 	decision, err := g.cfg.Limiter.Allow(r.Context(), key, 1)
+	limiterDown := false
 	if err != nil {
 		log.Printf("limiter error: %v (fail-open=%v)", err, g.cfg.FailOpen)
 		if !g.cfg.FailOpen {
@@ -104,6 +112,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		decision = limiter.Decision{Allowed: true, Algorithm: g.cfg.Limiter.Name()}
+		limiterDown = true
 	}
 	if !decision.Allowed {
 		w.Header().Set("Retry-After", msToSec(decision.RetryAfter))
@@ -112,8 +121,10 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g.record(r, false, "", start, http.StatusTooManyRequests)
 		return
 	}
-	w.Header().Set("X-RateLimit-Limit", itoa(decision.Limit))
-	w.Header().Set("X-RateLimit-Algorithm", decision.Algorithm)
+	if !limiterDown { // don't advertise a zero-value Limit during an incident
+		w.Header().Set("X-RateLimit-Limit", itoa(decision.Limit))
+		w.Header().Set("X-RateLimit-Algorithm", decision.Algorithm)
+	}
 
 	// route: consistent hashing over healthy upstreams
 	upstream := g.cfg.Ring.Get(r.URL.Path + ":" + key)

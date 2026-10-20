@@ -11,6 +11,10 @@ type Admin struct {
 	stats *Stats
 	gw    *Gateway
 	load  *LoadTest
+	// AdminToken guards mutating endpoints (POST /api/upstreams,
+	// /api/loadtest). Empty keeps them open for local demo use - set it
+	// via -admin-token anywhere the dashboard port is reachable by others.
+	AdminToken string
 }
 
 func NewAdmin(stats *Stats, gw *Gateway) *Admin { return &Admin{stats: stats, gw: gw} }
@@ -38,6 +42,10 @@ func (a *Admin) handleUpstreams(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (a *Admin) handleAddUpstream(w http.ResponseWriter, r *http.Request) {
+	if a.AdminToken != "" && r.Header.Get("X-Admin-Token") != a.AdminToken {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 	var body struct {
 		URL string `json:"url"`
 	}

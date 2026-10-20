@@ -52,9 +52,10 @@ func TestTokenBucketNoClockSkewExploit(t *testing.T) {
 		t.Fatal("first request should pass")
 	}
 	// clock jumping backwards must not mint tokens
-	if _, ok, _ := tb(state, 500); !ok {
-		// still fine: tokens remain from first call; but no refill happened
-		t.Log("allowed from remaining tokens, acceptable")
+	tokensBefore := state["tokens"]
+	state, _, _ = tb(state, 500)
+	if state["tokens"] > tokensBefore {
+		t.Fatal("backward clock jump must not mint tokens")
 	}
 }
 

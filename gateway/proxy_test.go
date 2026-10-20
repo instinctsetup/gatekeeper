@@ -156,3 +156,30 @@ func TestSlowDashboardDoesNotBlockGateway(t *testing.T) {
 		t.Fatal("recording blocked on a slow subscriber")
 	}
 }
+
+func TestFallbackKeyIgnoresEphemeralPort(t *testing.T) {
+	var hits int64
+	up := testUpstream(t, &hits)
+	defer up.Close()
+	ring := hash.New()
+	ring.Add(up.URL)
+	// 1 rps, burst 1: the second same-client request must throttle
+	gw := newGateway(nil, limiter.NewTokenBucket(limiter.NewMemoryStore(), 1, 1), ring, NewStats())
+
+	req := httptest.NewRequest("GET", "/data", nil)
+	req.RemoteAddr = "203.0.113.7:50001"
+	rec := httptest.NewRecorder()
+	gw.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("first request should pass, got %d", rec.Code)
+	}
+
+	// same IP, new connection (new port): must share the same bucket
+	req = httptest.NewRequest("GET", "/data", nil)
+	req.RemoteAddr = "203.0.113.7:51099"
+	rec = httptest.NewRecorder()
+	gw.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("new port must not mint a fresh bucket, got %d", rec.Code)
+	}
+}

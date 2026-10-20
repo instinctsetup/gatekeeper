@@ -34,6 +34,7 @@ func main() {
 	burst := flag.Int("burst", 10, "token bucket burst size")
 	upstreams := flag.String("upstreams", "", "comma-separated upstream URLs (empty = start 3 demo backends)")
 	demoBackends := flag.Int("demo-backends", 3, "demo backends to start when -upstreams is empty")
+	adminToken := flag.String("admin-token", "", "X-Admin-Token required for mutating admin endpoints (empty = open, local demo only)")
 	flag.Parse()
 
 	// store
@@ -93,6 +94,7 @@ func main() {
 	gw := gateway.New(gateway.Config{Limiter: lim, Ring: ring, Stats: stats, FailOpen: true})
 	admin := gateway.NewAdmin(stats, gw).
 		WithLoadTest(gateway.NewLoadTest("http://127.0.0.1" + *addr))
+	admin.AdminToken = *adminToken
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/", admin.Mux())
