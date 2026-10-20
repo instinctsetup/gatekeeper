@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gatekeeper - rate-limiting API gateway</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="logo">⛨</span>
+    <div>
+      <h1>Gatekeeper</h1>
+      <p class="tagline">every request, allowed or throttled, live</p>
+    </div>
+  </div>
+  <div class="live"><span id="live-dot" class="dot"></span><span id="live-label">connecting…</span></div>
+</header>
+
+<section class="stats">
+  <div class="stat"><span class="num" id="s-total">0</span><span class="lbl">requests</span></div>
+  <div class="stat"><span class="num ok" id="s-allowed">0</span><span class="lbl">allowed</span></div>
+  <div class="stat"><span class="num bad" id="s-denied">0</span><span class="lbl">throttled</span></div>
+  <div class="stat"><span class="num" id="s-rps">0</span><span class="lbl">requests / sec</span></div>
+  <div class="stat"><span class="num" id="s-upstreams">–</span><span class="lbl">upstreams</span></div>
+  <div class="stat controls">
+    <button id="fire">▶ Fire load test</button>
+    <span class="muted small">3 clients × 20 rps × 10s at a 5 r/s limit</span>
+  </div>
+</section>
+
+<main>
+  <section class="panel">
+    <h2>Live decision stream</h2>
+    <div id="stream" class="stream"></div>
+  </section>
+  <section class="panel">
+    <h2>Per client</h2>
+    <div id="keys"></div>
+    <h2 style="margin-top:18px">Throughput (last 60s)</h2>
+    <canvas id="chart" width="520" height="160"></canvas>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
