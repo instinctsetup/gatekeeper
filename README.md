@@ -6,8 +6,8 @@ The rate limiter is the most-asked system-design interview question; this is a w
 
 ## Demo & report
 
-- **Demo video (Drive):** _link added after upload_
-- **PDF report (Drive):** _link added after upload_
+- **Demo video (Drive):** https://drive.google.com/file/d/11XWTQJI0PloGfmgUFW7TrmZAHYApAJcC/view
+- **PDF report (Drive):** https://drive.google.com/file/d/1f4dXdjwAsbhK1mo7pQw5C822zlfSaBnc/view
 - Dashboard screenshot: [`docs/dashboard.png`](docs/dashboard.png)
 
 ## What it does
